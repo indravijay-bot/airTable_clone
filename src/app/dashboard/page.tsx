@@ -46,7 +46,7 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gray-50 p-8">
         <button
           onClick={() => setSelectedTable(null)}
-          className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 rounded hover:bg-gray-100"
+          className="inline-flex items-center gap-1 rounded border border-gray-300 px-3 py-1 hover:bg-gray-100"
         >
           &larr; Back to Tables
         </button>
@@ -57,18 +57,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-gray-50">
       {/* Top Navbar */}
-      <nav className="flex items-center justify-between bg-white border-b border-gray-200 px-4 h-16">
+      <nav className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4">
         <button
           onClick={toggleSidebar}
-          className="lg:hidden p-2 rounded hover:bg-gray-100"
+          className="rounded p-2 hover:bg-gray-100 lg:hidden"
           aria-label="Toggle sidebar"
         >
           <Menu className="h-6 w-6 text-gray-700" />
         </button>
 
-        <h1 className="text-xl font-bold text-gray-900 select-none">Airtable Clone</h1>
+        <h1 className="text-xl font-bold text-gray-900 select-none">
+          Airtable Clone
+        </h1>
 
         <div className="relative inline-block text-left">
           <button
@@ -82,7 +84,7 @@ export default function Dashboard() {
             <ChevronDown className="ml-1 h-4 w-4" />
           </button>
           {isUserMenuOpen && (
-            <div className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+            <div className="ring-opacity-5 absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black">
               <div className="py-1">
                 <button
                   onClick={() => setIsUserMenuOpen(false)}
@@ -106,21 +108,27 @@ export default function Dashboard() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 bg-white border-r border-gray-200 transform transition-all duration-300 ease-in-out ${
-            isSidebarOpen ? "w-64 translate-x-0" : "w-0 -translate-x-full lg:w-12 lg:translate-x-0"
+          className={`fixed inset-y-0 left-0 z-50 transform border-r border-gray-200 bg-white transition-all duration-300 ease-in-out ${
+            isSidebarOpen
+              ? "w-64 translate-x-0"
+              : "w-0 -translate-x-full lg:w-12 lg:translate-x-0"
           } lg:static lg:inset-0`}
           aria-label="Sidebar"
         >
-          <div className={`flex flex-col h-full overflow-hidden ${!isSidebarOpen ? "lg:items-center lg:py-4" : ""}`}>
+          <div
+            className={`flex h-full flex-col overflow-hidden ${!isSidebarOpen ? "lg:items-center lg:py-4" : ""}`}
+          >
             {isSidebarOpen ? (
               <>
                 {/* Sidebar Header (icon only) */}
-                <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 flex-shrink-0">
-                  <Database className="h-8 w-8 text-blue-600" title="App Logo" />
+                <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 px-4">
+                  <div title="App Logo">
+                    <Database className="h-8 w-8 text-blue-600" />
+                  </div>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={toggleSidebar}
-                      className="hidden lg:flex p-2 rounded hover:bg-gray-100"
+                      className="hidden rounded p-2 hover:bg-gray-100 lg:flex"
                       title="Collapse sidebar"
                       aria-label="Collapse sidebar"
                     >
@@ -128,7 +136,7 @@ export default function Dashboard() {
                     </button>
                     <button
                       onClick={() => setIsSidebarOpen(false)}
-                      className="lg:hidden p-2 rounded hover:bg-gray-100"
+                      className="rounded p-2 hover:bg-gray-100 lg:hidden"
                       title="Close sidebar"
                       aria-label="Close sidebar"
                     >
@@ -138,36 +146,43 @@ export default function Dashboard() {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto" aria-label="Primary">
+                <nav
+                  className="flex-1 space-y-2 overflow-y-auto px-4 py-4"
+                  aria-label="Primary"
+                >
                   <button
                     onClick={() => {
                       setSelectedBase(null);
                       setSelectedTable(null);
                     }}
-                    className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                    className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-gray-700 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                   >
                     <Home className="h-4 w-4" />
                     Home
                   </button>
 
                   <section className="pt-4" aria-labelledby="bases-label">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="mb-2 flex items-center justify-between">
                       <h2
                         id="bases-label"
-                        className="text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        className="text-xs font-medium tracking-wider text-gray-500 uppercase"
                       >
                         Bases
                       </h2>
                       <button
                         onClick={() => setIsCreateBaseOpen(true)}
-                        className="h-6 w-6 p-0 flex items-center justify-center rounded hover:bg-gray-100"
+                        className="flex h-6 w-6 items-center justify-center rounded p-0 hover:bg-gray-100"
                         title="Create new base"
                       >
                         <Plus className="h-3 w-3" />
                       </button>
                     </div>
 
-                    <div className="space-y-1" role="list" aria-label="Bases list">
+                    <div
+                      className="space-y-1"
+                      role="list"
+                      aria-label="Bases list"
+                    >
                       {bases.map((base) => (
                         <div key={base.id}>
                           <button
@@ -179,10 +194,14 @@ export default function Dashboard() {
                                 setSelectedTable(null);
                               }
                             }}
-                            className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                              selectedBase === base.id ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                            className={`flex w-full items-center gap-2 rounded px-3 py-2 text-left hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none ${
+                              selectedBase === base.id
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-gray-700"
                             }`}
-                            aria-current={selectedBase === base.id ? "true" : undefined}
+                            aria-current={
+                              selectedBase === base.id ? "true" : undefined
+                            }
                             role="listitem"
                           >
                             <ChevronRight
@@ -195,24 +214,37 @@ export default function Dashboard() {
                             <span className="truncate">{base.name}</span>
                           </button>
                           {selectedBase === base.id && (
-                            <div className="ml-6 mt-1 space-y-1" role="list" aria-label={`${base.name} tables`}>
+                            <div
+                              className="mt-1 ml-6 space-y-1"
+                              role="list"
+                              aria-label={`${base.name} tables`}
+                            >
                               {tables.map((table) => (
                                 <button
                                   key={table.id}
                                   onClick={() => setSelectedTable(table.id)}
-                                  className={`flex w-full items-center gap-2 rounded px-3 py-1 text-xs text-left hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                                    selectedTable === table.id ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                                  className={`flex w-full items-center gap-2 rounded px-3 py-1 text-left text-xs hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none ${
+                                    selectedTable === table.id
+                                      ? "bg-blue-50 text-blue-700"
+                                      : "text-gray-700"
                                   }`}
-                                  aria-current={selectedTable === table.id ? "true" : undefined}
+                                  aria-current={
+                                    selectedTable === table.id
+                                      ? "true"
+                                      : undefined
+                                  }
                                   role="listitem"
                                 >
-                                  <TableIcon className="h-3 w-3" aria-hidden="true" />
+                                  <TableIcon
+                                    className="h-3 w-3"
+                                    aria-hidden="true"
+                                  />
                                   <span className="truncate">{table.name}</span>
                                 </button>
                               ))}
                               <button
                                 onClick={() => setIsCreateTableOpen(true)}
-                                className="flex w-full items-center gap-2 rounded px-3 py-1 text-xs text-gray-500 text-left hover:text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                className="flex w-full items-center gap-2 rounded px-3 py-1 text-left text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                                 title="Add table"
                               >
                                 <Plus className="h-3 w-3" />
@@ -227,22 +259,22 @@ export default function Dashboard() {
                 </nav>
 
                 {/* Sidebar Footer */}
-                <div className="border-t border-gray-200 p-4 space-y-2 flex-shrink-0">
-                  <button className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                <div className="flex-shrink-0 space-y-2 border-t border-gray-200 p-4">
+                  <button className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-gray-700 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                     <Settings className="h-4 w-4" aria-hidden="true" />
                     Settings
                   </button>
-                  <button className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                  <button className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-gray-700 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none">
                     <HelpCircle className="h-4 w-4" aria-hidden="true" />
                     Help
                   </button>
                 </div>
               </>
             ) : (
-              <div className="hidden lg:flex flex-col items-center space-y-4 pt-4">
+              <div className="hidden flex-col items-center space-y-4 pt-4 lg:flex">
                 <button
                   onClick={toggleSidebar}
-                  className="p-2 rounded hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="rounded p-2 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                   title="Expand sidebar"
                   aria-label="Expand sidebar"
                 >
@@ -253,14 +285,14 @@ export default function Dashboard() {
                     setSelectedBase(null);
                     setSelectedTable(null);
                   }}
-                  className="p-2 rounded hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="rounded p-2 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                   title="Home"
                 >
                   <Home className="h-5 w-5" aria-hidden="true" />
                 </button>
                 <button
                   onClick={() => setIsCreateBaseOpen(true)}
-                  className="p-2 rounded hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="rounded p-2 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                   title="New Base"
                 >
                   <Plus className="h-5 w-5" aria-hidden="true" />
@@ -273,21 +305,26 @@ export default function Dashboard() {
         {/* Sidebar Overlay for mobile */}
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="bg-opacity-50 fixed inset-0 z-40 bg-black lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
             aria-hidden="true"
           />
         )}
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-0 p-8 overflow-auto bg-white rounded-lg shadow">
+        <main className="flex-1 overflow-auto rounded-lg bg-white p-8 shadow lg:ml-0">
           {!selectedBase ? (
             <>
-              <h2 className="text-2xl font-bold mb-6 lg:hidden">Your Bases</h2>
+              <h2 className="mb-6 text-2xl font-bold lg:hidden">Your Bases</h2>
               {bases.length === 0 ? (
-                <div className="text-center py-12 text-gray-600">
-                  <Database className="mx-auto mb-4 h-12 w-12" aria-hidden="true" />
-                  <h3 className="mb-2 text-lg font-semibold text-gray-900">No bases yet</h3>
+                <div className="py-12 text-center text-gray-600">
+                  <Database
+                    className="mx-auto mb-4 h-12 w-12"
+                    aria-hidden="true"
+                  />
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                    No bases yet
+                  </h3>
                   <p className="mb-4">Create your first base to get started</p>
                   <button
                     onClick={() => setIsCreateBaseOpen(true)}
@@ -298,7 +335,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {bases.map((base) => (
                     <div
                       key={base.id}
@@ -313,7 +350,10 @@ export default function Dashboard() {
                       }}
                     >
                       <div className="flex items-center space-x-2 font-semibold text-gray-900">
-                        <Database className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                        <Database
+                          className="h-5 w-5 text-blue-600"
+                          aria-hidden="true"
+                        />
                         <span>{base.name}</span>
                       </div>
                       <p className="mt-1 text-gray-600">{base.description}</p>
@@ -324,14 +364,21 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold mb-6 lg:hidden">
+              <h2 className="mb-6 text-2xl font-bold lg:hidden">
                 {bases.find((b) => b.id === selectedBase)?.name} Tables
               </h2>
               {tables.length === 0 ? (
-                <div className="text-center py-12 text-gray-600">
-                  <TableIcon className="mx-auto mb-4 h-12 w-12" aria-hidden="true" />
-                  <h3 className="mb-2 text-lg font-semibold text-gray-900">No tables yet</h3>
-                  <p className="mb-4">Create your first table to start organizing data</p>
+                <div className="py-12 text-center text-gray-600">
+                  <TableIcon
+                    className="mx-auto mb-4 h-12 w-12"
+                    aria-hidden="true"
+                  />
+                  <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                    No tables yet
+                  </h3>
+                  <p className="mb-4">
+                    Create your first table to start organizing data
+                  </p>
                   <button
                     onClick={() => setIsCreateTableOpen(true)}
                     className="inline-flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
@@ -341,7 +388,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {tables.map((table) => (
                     <div
                       key={table.id}
@@ -356,7 +403,10 @@ export default function Dashboard() {
                       }}
                     >
                       <div className="flex items-center space-x-2 font-semibold text-gray-900">
-                        <TableIcon className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                        <TableIcon
+                          className="h-5 w-5 text-blue-600"
+                          aria-hidden="true"
+                        />
                         <span>{table.name}</span>
                       </div>
                     </div>
@@ -370,16 +420,19 @@ export default function Dashboard() {
         {/* Create Base Modal */}
         {isCreateBaseOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-base-title"
           >
             <div className="w-full max-w-md rounded bg-white p-6 shadow-lg">
-              <h3 id="create-base-title" className="text-lg font-semibold mb-4">
+              <h3 id="create-base-title" className="mb-4 text-lg font-semibold">
                 Create New Base
               </h3>
-              <label htmlFor="baseName" className="block mb-1 font-medium text-gray-700">
+              <label
+                htmlFor="baseName"
+                className="mb-1 block font-medium text-gray-700"
+              >
                 Name
               </label>
               <input
@@ -387,9 +440,12 @@ export default function Dashboard() {
                 value={newBaseName}
                 onChange={(e) => setNewBaseName(e.target.value)}
                 placeholder="Enter base name"
-                className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              <label htmlFor="baseDescription" className="block mb-1 font-medium text-gray-700">
+              <label
+                htmlFor="baseDescription"
+                className="mb-1 block font-medium text-gray-700"
+              >
                 Description
               </label>
               <textarea
@@ -397,7 +453,7 @@ export default function Dashboard() {
                 value={newBaseDescription}
                 onChange={(e) => setNewBaseDescription(e.target.value)}
                 placeholder="Enter base description"
-                className="mb-4 w-full resize-none rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mb-4 w-full resize-none rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 rows={3}
               />
               <div className="flex justify-end gap-2">
@@ -420,7 +476,9 @@ export default function Dashboard() {
                   }}
                   disabled={!newBaseName.trim()}
                   className={`rounded px-4 py-2 font-semibold text-white ${
-                    newBaseName.trim() ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"
+                    newBaseName.trim()
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "cursor-not-allowed bg-blue-300"
                   }`}
                 >
                   Create Base
@@ -433,16 +491,22 @@ export default function Dashboard() {
         {/* Create Table Modal */}
         {isCreateTableOpen && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+            className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black"
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-table-title"
           >
             <div className="w-full max-w-md rounded bg-white p-6 shadow-lg">
-              <h3 id="create-table-title" className="text-lg font-semibold mb-4">
+              <h3
+                id="create-table-title"
+                className="mb-4 text-lg font-semibold"
+              >
                 Create New Table
               </h3>
-              <label htmlFor="tableName" className="block mb-1 font-medium text-gray-700">
+              <label
+                htmlFor="tableName"
+                className="mb-1 block font-medium text-gray-700"
+              >
                 Name
               </label>
               <input
@@ -450,7 +514,7 @@ export default function Dashboard() {
                 value={newTableName}
                 onChange={(e) => setNewTableName(e.target.value)}
                 placeholder="Enter table name"
-                className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <div className="flex justify-end gap-2">
                 <button
@@ -470,7 +534,9 @@ export default function Dashboard() {
                   }}
                   disabled={!newTableName.trim()}
                   className={`rounded px-4 py-2 font-semibold text-white ${
-                    newTableName.trim() ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-300 cursor-not-allowed"
+                    newTableName.trim()
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "cursor-not-allowed bg-blue-300"
                   }`}
                 >
                   Create Table
