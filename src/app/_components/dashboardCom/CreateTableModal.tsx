@@ -1,19 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
+import { api } from "~/trpc/react";
+import { toast } from "sonner";
 
 type Props = {
   onClose: () => void;
+  baseId: string; // baseId is needed to create a table under a base
 };
 
-export default function CreateTableModal({ onClose }: Props) {
+export default function CreateTableModal({ onClose, baseId }: Props) {
   const [newTableName, setNewTableName] = useState("");
 
-  const handleCreate = () => {
-    // TODO: Integrate with backend or state management
-    onClose();
+  const utils = api.useContext(); // useContext is recommended for utils in latest tRPC
+  const { mutate, isLoading } = api.table.create.useMutation({
+    onSuccess: async () => {
+      // Invalidate the tables list for this base to refresh UI
+      await utils.table.getByBaseId.invalidate({ baseId });
+      toast.success("Table created successfully");
+    //  resetAndClose();
+    },
+    onError: (error) => {
+      toast.error("Failed to create table: " + error.message);
+    },
+  });
+
+  const resetAndClose = () => {
     setNewTableName("");
+    onClose();
+  };
+
+  const handleCreate = () => {
+    if (!newTableName.trim()) return;
+
+    mutate({
+      name: newTableName.trim(),
+      baseId,
+    });
+    resetAndClose();
   };
 
   return (
@@ -29,9 +54,10 @@ export default function CreateTableModal({ onClose }: Props) {
             Create New Table
           </h3>
           <button
-            onClick={onClose}
+            onClick={resetAndClose}
             className="rounded p-2 hover:bg-gray-100 focus:outline-none"
             aria-label="Close modal"
+            type="button"
           >
             <X className="h-5 w-5" />
           </button>
@@ -48,29 +74,37 @@ export default function CreateTableModal({ onClose }: Props) {
           value={newTableName}
           onChange={(e) => setNewTableName(e.target.value)}
           placeholder="Enter table name"
-          className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          type="text"
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isLoading && newTableName.trim()) {
+              e.preventDefault();
+              handleCreate();
+            }
+          }}
         />
 
         <div className="flex justify-end gap-2">
           <button
-            onClick={() => {
-              onClose();
-              setNewTableName("");
-            }}
+            onClick={resetAndClose}
             className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300"
+            type="button"
+            disabled={isLoading}
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
-            disabled={!newTableName.trim()}
+            disabled={!newTableName.trim() || isLoading}
             className={`rounded px-4 py-2 font-semibold text-white ${
-              newTableName.trim()
+              newTableName.trim() && !isLoading
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "cursor-not-allowed bg-blue-300"
             }`}
+            type="button"
           >
-            Create Table
+            {isLoading ? "Creating..." : "Create Table"}
           </button>
         </div>
       </div>
