@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 // Reusable layout wrapper
 const ParentLayout = ({ children }: { children: ReactNode }) => (
-  <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] px-4 text-white">
+  <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#3b82f6] to-[#6366f1] px-4 text-white">
     <div className="container flex max-w-xl flex-col items-center justify-center gap-12 py-16">
       <h1 className="text-5xl font-extrabold tracking-tight sm:text-[5rem]">Air Table</h1>
       {children}
@@ -49,12 +49,13 @@ export function SignIn() {
   return (
     <ParentLayout>
       <button
-        className="rounded-lg bg-[hsl(280,100%,70%)] px-6 py-3 font-bold text-white"
-        disabled={isLoading}
-        onClick={handleSignIn}
-      >
-        {isLoading ? "Signing in..." : "Sign in with Google"}
-      </button>
+  className="rounded-lg bg-white text-[#3b82f6] border border-[#3b82f6] px-6 py-3 font-bold hover:bg-[#e0e7ff] transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+  disabled={isLoading}
+  onClick={handleSignIn}
+>
+  {isLoading ? "Signing in..." : "Sign in with Google"}
+</button>
+
 
       {error && <p className="mt-4 text-red-500">{error}</p>}
     </ParentLayout>
