@@ -15,8 +15,7 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { Base, Table } from "../types";
-
+import type { Base, Table } from "~/app/dashboard/types";
 type SidebarProps = {
   selectedBase: string | null;
   setSelectedBase: (id: string | null) => void;
