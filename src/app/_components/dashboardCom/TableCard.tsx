@@ -13,7 +13,7 @@ export default function TableCard({ table }: Props) {
 
   const handleClick = () => {
     console.log("Navigating to table:", table.id) // Debug log
-   // router.push(`/dashboard/table/${table.id}`)
+    router.push(`/dashboard/table/${table.id}`)
   }
 
   return (

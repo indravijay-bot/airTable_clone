@@ -42,38 +42,61 @@ export const tableRouter = createTRPCRouter({
             columns: {
               createMany: {
                 data: [
-                  { name: "Name", type: "TEXT", order: 0 },
-                  { name: "Amount", type: "NUMBER", order: 1 },
+                  { name: "Project Name", type: "TEXT", order: 0 },
+                  { name: "Status", type: "TEXT", order: 1 },
+                  { name: "Budget", type: "NUMBER", order: 2 },
+                  { name: "Owner", type: "TEXT", order: 3 },
                 ],
               },
             },
+          },
+          include: {
+            columns: true,
           },
         })
 
         // Import faker dynamically for server-side seeding
         const { faker } = await import("@faker-js/faker")
 
-        // Create 10 rows for the table
-        const rowsData = Array.from({ length: 10 }).map(() => ({
+        // Create 25 rows for the table with realistic data
+        const rowsData = Array.from({ length: 25 }).map(() => ({
           tableId: table.id,
         }))
         await ctx.db.row.createMany({ data: rowsData })
 
-        // Fetch rows and columns to create cells
+        // Fetch rows to create cells
         const createdRows = await ctx.db.row.findMany({
           where: { tableId: table.id },
         })
-        const columns = await ctx.db.column.findMany({
-          where: { tableId: table.id },
-        })
 
-        // Prepare cells data with faker values
+        // Prepare cells data with realistic values
         const cellsData = []
+        const statuses = ["Not Started", "In Progress", "Completed", "On Hold"]
+
         for (const row of createdRows) {
-          for (const column of columns) {
+          for (const column of table.columns) {
             let value = ""
-            if (column.type === "TEXT") value = faker.person.fullName()
-            else if (column.type === "NUMBER") value = faker.number.int({ min: 0, max: 1000 }).toString()
+
+            switch (column.name) {
+              case "Project Name":
+                value = `${faker.company.buzzAdjective()} ${faker.company.buzzNoun()} ${faker.company.buzzVerb()}`
+                break
+              case "Status":
+                value = faker.helpers.arrayElement(statuses)
+                break
+              case "Budget":
+                value = faker.number.int({ min: 5000, max: 100000 }).toString()
+                break
+              case "Owner":
+                value = faker.person.fullName()
+                break
+              default:
+                if (column.type === "TEXT") {
+                  value = faker.lorem.words(2)
+                } else if (column.type === "NUMBER") {
+                  value = faker.number.int({ min: 0, max: 1000 }).toString()
+                }
+            }
 
             cellsData.push({
               rowId: row.id,
@@ -90,6 +113,47 @@ export const tableRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to create table",
+          cause: error,
+        })
+      }
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1, "Table name is required").max(100, "Table name is too long").optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        // Verify the table belongs to the user
+        const table = await ctx.db.table.findFirst({
+          where: {
+            id: input.id,
+            createdById: ctx.session.user.id,
+          },
+        })
+
+        if (!table) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Table not found or you do not have permission",
+          })
+        }
+
+        const updatedTable = await ctx.db.table.update({
+          where: { id: input.id },
+          data: {
+            ...(input.name && { name: input.name }),
+          },
+        })
+
+        return updatedTable
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update table",
           cause: error,
         })
       }
@@ -116,6 +180,11 @@ export const tableRouter = createTRPCRouter({
       const tables = await ctx.db.table.findMany({
         where: { baseId: input.baseId },
         orderBy: { createdAt: "desc" },
+        include: {
+          columns: {
+            orderBy: { order: "asc" },
+          },
+        },
       })
 
       return tables

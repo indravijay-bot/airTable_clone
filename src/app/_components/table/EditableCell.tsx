@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { api } from "~/trpc/react"
 import type { Cell, Column } from "~/types/table"
@@ -56,8 +55,35 @@ export default function EditableCell({ cell, column, rowId, tableId }: EditableC
       setIsEditing(false)
     } else if (e.key === "Tab") {
       handleSave()
-      // Let the default tab behavior handle focus movement
     }
+  }
+
+  // Render status badges for status-like columns
+  const renderStatusBadge = (value: string) => {
+    const statusColors: Record<string, string> = {
+      "In Progress": "bg-blue-100 text-blue-800",
+      "Not Started": "bg-gray-100 text-gray-800",
+      Completed: "bg-green-100 text-green-800",
+      "On Hold": "bg-yellow-100 text-yellow-800",
+    }
+
+    if (statusColors[value]) {
+      return (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusColors[value]}`}>
+          {value}
+        </span>
+      )
+    }
+    return value
+  }
+
+  // Format currency values
+  const formatCurrency = (value: string) => {
+    const num = Number.parseFloat(value)
+    if (!isNaN(num)) {
+      return `$${num.toLocaleString()}`
+    }
+    return value
   }
 
   if (isEditing) {
@@ -69,14 +95,20 @@ export default function EditableCell({ cell, column, rowId, tableId }: EditableC
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className="w-full h-full border-none outline-none bg-transparent"
+        className="w-full h-full border-none outline-none bg-transparent text-sm"
       />
     )
   }
 
+  const displayValue = value || ""
+  const isStatus = column.name.toLowerCase().includes("status")
+  const isCurrency =
+    column.type === "NUMBER" &&
+    (column.name.toLowerCase().includes("budget") || column.name.toLowerCase().includes("amount"))
+
   return (
     <div
-      className="w-full h-full cursor-text flex items-center"
+      className="w-full h-full cursor-text flex items-center text-sm"
       onClick={() => setIsEditing(true)}
       tabIndex={0}
       onKeyDown={(e) => {
@@ -85,7 +117,17 @@ export default function EditableCell({ cell, column, rowId, tableId }: EditableC
         }
       }}
     >
-      {value || <span className="text-gray-400 italic">Empty</span>}
+      {displayValue ? (
+        isStatus ? (
+          renderStatusBadge(displayValue)
+        ) : isCurrency ? (
+          formatCurrency(displayValue)
+        ) : (
+          displayValue
+        )
+      ) : (
+        <span className="text-gray-400 italic">Empty</span>
+      )}
     </div>
   )
 }
