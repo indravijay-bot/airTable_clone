@@ -162,6 +162,14 @@ export const tableRouter = createTRPCRouter({
           id: input.id,
           createdById: ctx.session.user.id,
         },
+        include: {
+          _count: {
+            select: {
+              rows: true,
+              columns: true,
+            },
+          },
+        },
       })
 
       if (!existingTable) {
@@ -171,7 +179,7 @@ export const tableRouter = createTRPCRouter({
         })
       }
 
-      // Delete the table (cascade will handle related records)
+      // Delete the table - cascade will handle related records (columns, rows, cells)
       await ctx.db.table.delete({
         where: {
           id: input.id,
@@ -180,12 +188,13 @@ export const tableRouter = createTRPCRouter({
 
       return { success: true, message: "Table deleted successfully" }
     } catch (error) {
+      console.error("Delete table error:", error)
       if (error instanceof TRPCError) {
         throw error
       }
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to delete table",
+        message: "Failed to delete table. Please try again.",
         cause: error,
       })
     }

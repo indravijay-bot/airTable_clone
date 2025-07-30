@@ -21,7 +21,7 @@ export default function TableCard({
 
   const handleClick = () => {
     console.log("Navigating to table:", table.id); // Debug log
-    router.push(`/dashboard/table/${table.id}`);
+  //  router.push(`/dashboard/table/${table.id}`);
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {

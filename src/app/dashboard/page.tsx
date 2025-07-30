@@ -43,7 +43,7 @@ export default function DashboardPage() {
         setSelectedBase(null)
       }
       setSelectedTable(null)
-      //  setDeletingBaseId(null)
+       // setDeletingBaseId(null)
     },
     onError: (error) => {
       console.error("Delete error:", error)

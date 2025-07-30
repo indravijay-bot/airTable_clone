@@ -209,6 +209,18 @@ export const baseRouter = createTRPCRouter({
           id: input.id,
           createdById: ctx.session.user.id,
         },
+        include: {
+          tables: {
+            include: {
+              _count: {
+                select: {
+                  rows: true,
+                  columns: true,
+                },
+              },
+            },
+          },
+        },
       })
 
       if (!existingBase) {
@@ -218,6 +230,7 @@ export const baseRouter = createTRPCRouter({
         })
       }
 
+      // Delete the base - this will cascade delete all tables, columns, rows, and cells
       await ctx.db.base.delete({
         where: {
           id: input.id,
@@ -226,12 +239,13 @@ export const baseRouter = createTRPCRouter({
 
       return { success: true, message: "Base deleted successfully" }
     } catch (error) {
+      console.error("Delete base error:", error)
       if (error instanceof TRPCError) {
         throw error
       }
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to delete base",
+        message: "Failed to delete base. Please try again.",
         cause: error,
       })
     }
