@@ -7,19 +7,19 @@ export default function TableSkeleton() {
       <div className="border-b border-gray-200 bg-gray-50 sticky top-0 z-10">
         <div className="flex">
           {/* Row number column */}
-          <div className="w-10 border-r border-gray-200 px-3 py-2 bg-gray-50">
-            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+          <div className="w-12 border-r border-gray-200 px-2 py-3 bg-gray-50 flex items-center justify-center">
+            <div className="h-3 w-3 bg-gray-200 rounded animate-pulse" />
           </div>
 
           {/* Column headers */}
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="w-40 border-r border-gray-200 px-3 py-2 bg-gray-50">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="w-40 border-r border-gray-200 px-4 py-3 bg-gray-50">
               <div className="h-4 bg-gray-200 rounded animate-pulse" />
             </div>
           ))}
 
           {/* Add column button */}
-          <div className="w-12 border-r border-gray-200 px-3 py-2 bg-gray-50 flex items-center justify-center">
+          <div className="w-12 border-r border-gray-200 px-2 py-3 bg-gray-50 flex items-center justify-center">
             <div className="h-3 w-3 bg-gray-200 rounded animate-pulse" />
           </div>
         </div>
@@ -30,31 +30,31 @@ export default function TableSkeleton() {
         {[...Array(15)].map((_, rowIndex) => (
           <div key={rowIndex} className="flex border-b border-gray-100 hover:bg-blue-50">
             {/* Row number */}
-            <div className="w-10 border-r border-gray-200 px-3 py-2 flex items-center justify-center">
+            <div className="w-12 border-r border-gray-200 px-2 py-3 flex items-center justify-center">
               <div className="h-3 w-4 bg-gray-200 rounded animate-pulse" />
             </div>
 
             {/* Cells */}
-            {[1, 2, 3, 4, 5].map((cellIndex) => (
-              <div key={cellIndex} className="w-40 border-r border-gray-200 px-3 py-2 flex items-center">
+            {[1, 2, 3, 4].map((cellIndex) => (
+              <div key={cellIndex} className="w-40 border-r border-gray-200 px-4 py-3 flex items-center">
                 <div
                   className="h-4 bg-gray-200 rounded animate-pulse"
                   style={{
                     width: `${Math.random() * 60 + 40}%`,
-                    animationDelay: `${(rowIndex * 5 + cellIndex) * 0.1}s`,
+                    animationDelay: `${(rowIndex * 4 + cellIndex) * 0.1}s`,
                   }}
                 />
               </div>
             ))}
 
             {/* Empty cell for add column */}
-            <div className="w-12 border-r border-gray-200 px-3 py-2" />
+            <div className="w-12 border-r border-gray-200 px-2 py-3" />
           </div>
         ))}
       </div>
 
       {/* Footer Skeleton */}
-      <div className="h-10 bg-gray-50 border-t border-gray-200 flex items-center px-4">
+      <div className="h-12 bg-gray-50 border-t border-gray-200 flex items-center px-4">
         <div className="flex items-center gap-4">
           <div className="h-4 w-12 bg-gray-200 rounded animate-pulse" />
         </div>

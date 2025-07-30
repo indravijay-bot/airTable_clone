@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { api } from "~/trpc/react"
 import type { Cell, Column } from "~/types/table"
 
@@ -10,12 +10,15 @@ interface EditableCellProps {
   column: Column
   rowId: string
   tableId: string
+  rowIndex: number
+  colIndex: number
 }
 
-export default function EditableCell({ cell, column, rowId, tableId }: EditableCellProps) {
+export default function EditableCell({ cell, column, rowId, tableId, rowIndex, colIndex }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [value, setValue] = useState(cell?.value || "")
   const inputRef = useRef<HTMLInputElement>(null)
+  const cellRef = useRef<HTMLDivElement>(null)
   const utils = api.useContext()
 
   // Update cell mutation
@@ -36,7 +39,7 @@ export default function EditableCell({ cell, column, rowId, tableId }: EditableC
     }
   }, [isEditing])
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     if (value !== (cell?.value || "")) {
       updateCellMutation.mutate({
         rowId,
@@ -45,26 +48,72 @@ export default function EditableCell({ cell, column, rowId, tableId }: EditableC
       })
     }
     setIsEditing(false)
-  }
+  }, [value, cell?.value, updateCellMutation, rowId, column.id])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave()
-    } else if (e.key === "Escape") {
-      setValue(cell?.value || "")
-      setIsEditing(false)
-    } else if (e.key === "Tab") {
-      handleSave()
-    }
-  }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        handleSave()
+        // Move to next row
+        const nextCell = document.querySelector(`[data-row="${rowIndex + 1}"][data-col="${colIndex}"]`) as HTMLElement
+        if (nextCell) {
+          nextCell.click()
+        }
+      } else if (e.key === "Escape") {
+        setValue(cell?.value || "")
+        setIsEditing(false)
+      } else if (e.key === "Tab") {
+        e.preventDefault()
+        handleSave()
+        // Move to next column or next row first column
+        const nextColIndex = colIndex + 1
+        let nextCell = document.querySelector(`[data-row="${rowIndex}"][data-col="${nextColIndex}"]`) as HTMLElement
+        if (!nextCell) {
+          // Move to first column of next row
+          nextCell = document.querySelector(`[data-row="${rowIndex + 1}"][data-col="0"]`) as HTMLElement
+        }
+        if (nextCell) {
+          setTimeout(() => nextCell.click(), 0)
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        handleSave()
+        const prevCell = document.querySelector(`[data-row="${rowIndex - 1}"][data-col="${colIndex}"]`) as HTMLElement
+        if (prevCell) {
+          prevCell.click()
+        }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault()
+        handleSave()
+        const nextCell = document.querySelector(`[data-row="${rowIndex + 1}"][data-col="${colIndex}"]`) as HTMLElement
+        if (nextCell) {
+          nextCell.click()
+        }
+      } else if (e.key === "ArrowLeft" && !isEditing) {
+        e.preventDefault()
+        const prevCell = document.querySelector(`[data-row="${rowIndex}"][data-col="${colIndex - 1}"]`) as HTMLElement
+        if (prevCell) {
+          prevCell.click()
+        }
+      } else if (e.key === "ArrowRight" && !isEditing) {
+        e.preventDefault()
+        const nextCell = document.querySelector(`[data-row="${rowIndex}"][data-col="${colIndex + 1}"]`) as HTMLElement
+        if (nextCell) {
+          nextCell.click()
+        }
+      }
+    },
+    [handleSave, cell?.value, rowIndex, colIndex, isEditing],
+  )
 
   // Render status badges for status-like columns
   const renderStatusBadge = (value: string) => {
     const statusColors: Record<string, string> = {
-      "In Progress": "bg-blue-100 text-blue-800",
-      "Not Started": "bg-gray-100 text-gray-800",
-      Completed: "bg-green-100 text-green-800",
-      "On Hold": "bg-yellow-100 text-yellow-800",
+      Checking: "bg-blue-100 text-blue-800",
+      Savings: "bg-green-100 text-green-800",
+      Credit: "bg-red-100 text-red-800",
+      Investment: "bg-purple-100 text-purple-800",
     }
 
     if (statusColors[value]) {
@@ -95,33 +144,33 @@ export default function EditableCell({ cell, column, rowId, tableId }: EditableC
         onChange={(e) => setValue(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className="w-full h-full border-none outline-none bg-transparent text-sm"
+        className="w-full h-full border-none outline-none bg-white text-sm px-1 py-1 rounded"
+        style={{ minHeight: "32px" }}
       />
     )
   }
 
   const displayValue = value || ""
-  const isStatus = column.name.toLowerCase().includes("status")
+  const isAccountType = column.name.toLowerCase().includes("type")
   const isCurrency =
     column.type === "NUMBER" &&
-    (column.name.toLowerCase().includes("budget") || column.name.toLowerCase().includes("amount"))
+    (column.name.toLowerCase().includes("balance") || column.name.toLowerCase().includes("amount"))
 
   return (
     <div
-      className="w-full h-full cursor-text flex items-center text-sm"
+      ref={cellRef}
+      data-row={rowIndex}
+      data-col={colIndex}
+      className="w-full h-full cursor-text flex items-center text-sm min-h-[32px] px-1 py-1 rounded hover:bg-gray-50"
       onClick={() => setIsEditing(true)}
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          setIsEditing(true)
-        }
-      }}
+      onKeyDown={handleKeyDown}
     >
       {displayValue ? (
-        isStatus ? (
+        isAccountType ? (
           renderStatusBadge(displayValue)
         ) : isCurrency ? (
-          formatCurrency(displayValue)
+          <span className="font-mono">{formatCurrency(displayValue)}</span>
         ) : (
           displayValue
         )

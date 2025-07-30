@@ -8,7 +8,7 @@ import HideFieldsDropdown from "~/app/_components/table/HideFieldsDropdown"
 import FilterDropdown from "~/app/_components/table/FilterDropdown"
 import SortDropdown from "~/app/_components/table/SortDropdown"
 import TableSkeleton from "~/app/_components/table/TableSkeleton"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2, Plus, Database, AlertCircle, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import type { ColumnFilter, ColumnSort, TableView as TableViewType } from "~/types/table"
 
@@ -37,6 +37,7 @@ export default function TablePage() {
   const [currentTable, setCurrentTable] = useState<any>(null)
   const [currentBase, setCurrentBase] = useState<any>(null)
   const [allTables, setAllTables] = useState<any[]>([])
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
 
   const apiContext = api.useContext()
 
@@ -74,6 +75,7 @@ export default function TablePage() {
   )
 
   // Get table data with filters, sorts, and search - only run if tableId exists
+  // Using the optimized getData that includes totalCount from database
   const {
     data: tableData,
     isLoading: dataLoading,
@@ -86,7 +88,7 @@ export default function TablePage() {
       search: searchQuery,
       filters,
       sorts,
-      limit: 50,
+      limit: 1000, // Load in chunks of 1000
     },
     {
       getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -114,9 +116,29 @@ export default function TablePage() {
     },
   })
 
+  // Add 100k rows mutation
+  const add100kRowsMutation = api.table.add100kRows.useMutation({
+    onSuccess: () => {
+      // Invalidate and refetch data
+      apiContext.table.getData.invalidate({ tableId })
+      apiContext.table.getById.invalidate({ id: tableId })
+
+      // Show success message
+      setShowSuccessMessage(true)
+      setTimeout(() => setShowSuccessMessage(false), 5000)
+    },
+    onError: (error) => {
+      console.error("Failed to add 100k rows:", error)
+      alert("Failed to add 100k rows. Please try again.")
+    },
+  })
+
   const allRows = useMemo(() => {
     return tableData?.pages.flatMap((page) => page.rows) ?? []
   }, [tableData])
+
+  // Get total count from the first page or table data
+  const totalRowCount = tableData?.pages[0]?.totalCount || table?.rowCount
 
   const columns = table?.columns ?? currentTable?.columns ?? []
   const displayTable = table || currentTable
@@ -136,6 +158,12 @@ export default function TablePage() {
       id: tableId,
       name: editingTableName.trim(),
     })
+  }
+
+  const handleAdd100kRows = () => {
+    if (confirm("This will add 100,000 rows to your table. This may take 2-3 minutes. Continue?")) {
+      add100kRowsMutation.mutate({ tableId })
+    }
   }
 
   // Handle table switching
@@ -163,31 +191,46 @@ export default function TablePage() {
     )
   }
 
-  // Show UI immediately with skeleton if we don't have table data yet
-  const showSkeleton = !displayTable || dataLoading
+  // Show skeleton while loading
+  const showSkeleton = !displayTable || (dataLoading && allRows.length === 0)
 
   return (
-    <div className="h-screen bg-white flex flex-col">
-      {/* Top Navigation Bar */}
-      <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-purple-600 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">📊</span>
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
+      {/* Success notification */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <div>
+              <p className="font-medium text-green-900">100,000 rows added successfully!</p>
+              <p className="text-sm text-green-700">
+                You can now scroll through all {totalRowCount?.toLocaleString()} rows seamlessly.
+              </p>
+            </div>
           </div>
-          <span className="font-medium text-gray-900">
-            {displayTable?.name || <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />}
+        </div>
+      )}
+
+      {/* Top Navigation Bar - Fixed Height */}
+      <div className="h-16 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-purple-600 rounded flex items-center justify-center">
+            <span className="text-white text-sm font-bold">📊</span>
+          </div>
+          <span className="font-semibold text-gray-900 text-lg">
+            {displayTable?.name || <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />}
           </span>
-          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
 
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-8">
-            <button className="text-blue-600 font-medium border-b-2 border-blue-600 pb-2">Data</button>
-            <button className="text-gray-600 hover:text-gray-900">Automations</button>
-            <button className="text-gray-600 hover:text-gray-900">Interfaces</button>
-            <button className="text-gray-600 hover:text-gray-900">Forms</button>
+            <button className="text-blue-600 font-medium border-b-2 border-blue-600 pb-2 text-base">Data</button>
+            <button className="text-gray-600 hover:text-gray-900 text-base">Automations</button>
+            <button className="text-gray-600 hover:text-gray-900 text-base">Interfaces</button>
+            <button className="text-gray-600 hover:text-gray-900 text-base">Forms</button>
           </div>
         </div>
 
@@ -204,14 +247,14 @@ export default function TablePage() {
             Trial: 14 days left
           </div>
           <button className="text-blue-600 text-sm hover:text-blue-800">See what's new</button>
-          <button className="bg-purple-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-purple-700">
+          <button className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-purple-700">
             Share
           </button>
         </div>
       </div>
 
-      {/* Secondary Navigation - Tables */}
-      <div className="h-12 bg-gray-50 border-b border-gray-200 flex items-center px-4">
+      {/* Secondary Navigation - Tables - Fixed Height */}
+      <div className="h-14 bg-gray-50 border-b border-gray-200 flex items-center px-6 flex-shrink-0">
         <div className="flex items-center gap-6">
           {displayTables.length > 0 ? (
             displayTables.map((t) => (
@@ -229,7 +272,7 @@ export default function TablePage() {
                         setEditingTableName("")
                       }
                     }}
-                    className="px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none"
+                    className="px-3 py-1 text-sm border border-blue-500 rounded focus:outline-none"
                     autoFocus
                   />
                 ) : (
@@ -239,7 +282,7 @@ export default function TablePage() {
                       setEditingTableId(t.id)
                       setEditingTableName(t.name)
                     }}
-                    className={`text-sm px-2 py-1 rounded hover:text-gray-900 ${
+                    className={`text-sm px-3 py-2 rounded hover:text-gray-900 transition-colors ${
                       t.id === tableId ? "text-gray-900 font-medium border-b-2 border-gray-900 pb-2" : "text-gray-600"
                     }`}
                   >
@@ -252,7 +295,7 @@ export default function TablePage() {
             // Skeleton for tables loading
             <div className="flex items-center gap-6">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                <div key={i} className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
               ))}
             </div>
           )}
@@ -273,13 +316,13 @@ export default function TablePage() {
                     }
                   }}
                   placeholder="Table name"
-                  className="px-2 py-1 text-sm border border-blue-500 rounded focus:outline-none"
+                  className="px-3 py-1 text-sm border border-blue-500 rounded focus:outline-none"
                   autoFocus
                 />
                 <button
                   onClick={handleCreateTable}
                   disabled={!newTableName.trim() || createTableMutation.isLoading}
-                  className="px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
                 >
                   {createTableMutation.isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Add"}
                 </button>
@@ -288,7 +331,7 @@ export default function TablePage() {
                     setShowCreateTable(false)
                     setNewTableName("")
                   }}
-                  className="px-2 py-1 text-gray-600 text-sm hover:text-gray-900"
+                  className="px-3 py-1 text-gray-600 text-sm hover:text-gray-900"
                 >
                   Cancel
                 </button>
@@ -296,7 +339,7 @@ export default function TablePage() {
             ) : (
               <button
                 onClick={() => setShowCreateTable(true)}
-                className="w-6 h-6 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100"
+                className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100"
               >
                 <Plus className="w-4 h-4 text-gray-600" />
               </button>
@@ -315,9 +358,9 @@ export default function TablePage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Left Sidebar - Fixed Width */}
+        <div className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
           <div className="p-4">
             <button className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 rounded">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -344,27 +387,11 @@ export default function TablePage() {
               </svg>
               <input
                 type="text"
-                placeholder="Find a view"
+                placeholder="Search all cells..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </button>
             </div>
           </div>
 
@@ -381,12 +408,43 @@ export default function TablePage() {
               Grid view
             </button>
           </div>
+
+          {/* Add 100k rows button */}
+          <div className="px-4 mt-4">
+            <button
+              onClick={handleAdd100kRows}
+              disabled={add100kRowsMutation.isLoading}
+              className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed rounded transition-colors"
+            >
+              {add100kRowsMutation.isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Database className="w-4 h-4" />
+              )}
+              {add100kRowsMutation.isLoading ? "Adding 100k rows..." : "Add 100k Rows"}
+            </button>
+          </div>
+
+          {/* Show loading notification when adding rows */}
+          {add100kRowsMutation.isLoading && (
+            <div className="px-4 mt-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-900">Processing in batches</p>
+                    <p className="text-blue-700 mt-1">Adding 100,000 rows. This will take 2-3 minutes.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Main Table Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Table Controls */}
-          <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-4">
+        {/* Main Table Area - Flexible */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Table Controls - Fixed Height */}
+          <div className="h-12 bg-white border-b border-gray-200 flex items-center px-4 gap-4 flex-shrink-0">
             <button className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -500,43 +558,7 @@ export default function TablePage() {
               )}
             </div>
 
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              Group
-            </button>
-
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM7 21h16a2 2 0 002-2v-4a2 2 0 00-2-2H7m0-9h16a2 2 0 012 2v4a2 2 0 01-2 2H7m0-9V5a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H7"
-                />
-              </svg>
-              Color
-            </button>
-
             <div className="flex-1" />
-
-            <button className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                />
-              </svg>
-              Share and sync
-            </button>
 
             <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -550,21 +572,25 @@ export default function TablePage() {
             </button>
           </div>
 
-          {/* Table Content */}
-          {showSkeleton ? (
-            <TableSkeleton />
-          ) : (
-            <AirtableView
-              columns={columns}
-              rows={allRows}
-              isLoading={false}
-              onLoadMore={fetchNextPage}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-              hiddenColumns={hiddenColumns}
-              tableId={tableId}
-            />
-          )}
+          {/* Table Content - Flexible with proper height constraints */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {showSkeleton ? (
+              <TableSkeleton />
+            ) : (
+              <AirtableView
+                columns={columns}
+                rows={allRows}
+                isLoading={dataLoading}
+                onLoadMore={fetchNextPage}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                hiddenColumns={hiddenColumns}
+                tableId={tableId}
+                isAddingRows={add100kRowsMutation.isLoading}
+                totalRowCount={totalRowCount}
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
