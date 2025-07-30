@@ -1,44 +1,50 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Plus, X } from "lucide-react";
-import { api } from "~/trpc/react";
-import { toast } from "sonner"; // Optional: for nice notifications
+import { useState } from "react"
+import { X } from "lucide-react"
+import { api } from "~/trpc/react"
+import { toast } from "sonner" // Optional: for nice notifications
 
 type Props = {
-  onClose: () => void;
-};
+  onClose: () => void
+  onCreating?: (isCreating: boolean) => void
+}
 
-export default function CreateBaseModal({ onClose }: Props) {
-  const [newBaseName, setNewBaseName] = useState("");
-  const [newBaseDescription, setNewBaseDescription] = useState("");
-  
-  const utils = api.useUtils(); // For query invalidation
+export default function CreateBaseModal({ onClose, onCreating }: Props) {
+  const [newBaseName, setNewBaseName] = useState("")
+  const [newBaseDescription, setNewBaseDescription] = useState("")
+
+  const utils = api.useUtils() // For query invalidation
   const { mutate, isLoading } = api.base.create.useMutation({
+    onMutate: () => {
+      onCreating?.(true)
+    },
     onSuccess: async () => {
-      await utils.base.getAll.invalidate(); // Refresh bases
-      toast.success("Base created successfully");
-      
+      await utils.base.getAll.invalidate() // Refresh bases
+      toast.success("Base created successfully")
+      onCreating?.(false)
+   //   resetAndClose()
     },
-    onError: () => {
-      toast.error("Failed to create base");
+    onError: (error) => {
+      toast.error("Failed to create base: " + error.message)
+      onCreating?.(false)
     },
-  });
+  })
 
   const resetAndClose = () => {
-    onClose();
-    setNewBaseName("");
-    setNewBaseDescription("");
-  };
+    onClose()
+    setNewBaseName("")
+    setNewBaseDescription("")
+  }
 
   const handleCreate = () => {
-    if (!newBaseName.trim()) return;
+    if (!newBaseName.trim()) return
     mutate({
       name: newBaseName.trim(),
       description: newBaseDescription.trim() || undefined,
-    });
+    })
     resetAndClose();
-  };
+  }
 
   return (
     <div
@@ -56,6 +62,7 @@ export default function CreateBaseModal({ onClose }: Props) {
             onClick={resetAndClose}
             className="rounded p-2 hover:bg-gray-100 focus:outline-none"
             aria-label="Close modal"
+            disabled={isLoading}
           >
             <X className="h-5 w-5" />
           </button>
@@ -70,6 +77,12 @@ export default function CreateBaseModal({ onClose }: Props) {
           onChange={(e) => setNewBaseName(e.target.value)}
           placeholder="Enter base name"
           className="mb-4 w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isLoading}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isLoading && newBaseName.trim()) {
+              handleCreate()
+            }
+          }}
         />
 
         <label htmlFor="baseDescription" className="mb-1 block font-medium text-gray-700">
@@ -82,28 +95,31 @@ export default function CreateBaseModal({ onClose }: Props) {
           placeholder="Enter base description"
           className="mb-4 w-full resize-none rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={3}
+          disabled={isLoading}
         />
 
         <div className="flex justify-end gap-2">
           <button
             onClick={resetAndClose}
-            className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300"
+            className="rounded bg-gray-200 px-4 py-2 hover:bg-gray-300 disabled:opacity-50"
+            disabled={isLoading}
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
             disabled={!newBaseName.trim() || isLoading}
-            className={`rounded px-4 py-2 font-semibold text-white ${
-              newBaseName.trim() && !isLoading
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "cursor-not-allowed bg-blue-300"
+            className={`rounded px-4 py-2 font-semibold text-white flex items-center gap-2 ${
+              newBaseName.trim() && !isLoading ? "bg-blue-600 hover:bg-blue-700" : "cursor-not-allowed bg-blue-300"
             }`}
           >
+            {isLoading && (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            )}
             {isLoading ? "Creating..." : "Create Base"}
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }

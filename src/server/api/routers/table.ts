@@ -45,8 +45,6 @@ export const tableRouter = createTRPCRouter({
                 data: [
                   { name: "Person Name", type: "TEXT", order: 0 },
                   { name: "Account Balance", type: "NUMBER", order: 1 },
-                  { name: "Bank Name", type: "TEXT", order: 2 },
-                  { name: "Account Type", type: "TEXT", order: 3 },
                 ],
               },
             },
@@ -72,8 +70,8 @@ export const tableRouter = createTRPCRouter({
 
         // Prepare cells data with realistic values
         const cellsData = []
-        const accountTypes = ["Checking", "Savings", "Credit", "Investment"]
-        const bankNames = ["Chase Bank", "Bank of America", "Wells Fargo", "Citibank", "Goldman Sachs", "JP Morgan"]
+        // const accountTypes = ["Checking", "Savings", "Credit", "Investment"]
+        // const bankNames = ["Chase Bank", "Bank of America", "Wells Fargo", "Citibank", "Goldman Sachs", "JP Morgan"]
 
         for (const row of createdRows) {
           for (const column of table.columns) {
@@ -86,11 +84,6 @@ export const tableRouter = createTRPCRouter({
               case "Account Balance":
                 value = faker.number.int({ min: 1000, max: 500000 }).toString()
                 break
-              case "Bank Name":
-                value = faker.helpers.arrayElement(bankNames)
-                break
-              case "Account Type":
-                value = faker.helpers.arrayElement(accountTypes)
                 break
               default:
                 if (column.type === "TEXT") {
@@ -160,6 +153,43 @@ export const tableRouter = createTRPCRouter({
         })
       }
     }),
+
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ ctx, input }) => {
+    try {
+      // First check if the table exists and belongs to the user
+      const existingTable = await ctx.db.table.findFirst({
+        where: {
+          id: input.id,
+          createdById: ctx.session.user.id,
+        },
+      })
+
+      if (!existingTable) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Table not found",
+        })
+      }
+
+      // Delete the table (cascade will handle related records)
+      await ctx.db.table.delete({
+        where: {
+          id: input.id,
+        },
+      })
+
+      return { success: true, message: "Table deleted successfully" }
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error
+      }
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to delete table",
+        cause: error,
+      })
+    }
+  }),
 
   getByBaseId: protectedProcedure.input(z.object({ baseId: z.string() })).query(async ({ ctx, input }) => {
     try {
@@ -869,8 +899,8 @@ export const tableRouter = createTRPCRouter({
       // Optimized batch processing for better performance
       const batchSize = 2000
       const totalRows = 100000
-      const accountTypes = ["Checking", "Savings", "Credit", "Investment"]
-      const bankNames = ["Chase Bank", "Bank of America", "Wells Fargo", "Citibank", "Goldman Sachs", "JP Morgan"]
+      //  const accountTypes = ["Checking", "Savings", "Credit", "Investment"]
+      //  const bankNames = ["Chase Bank", "Bank of America", "Wells Fargo", "Citibank", "Goldman Sachs", "JP Morgan"]
 
       console.log(`Starting to add ${totalRows} rows in batches of ${batchSize}`)
 
@@ -907,12 +937,12 @@ export const tableRouter = createTRPCRouter({
               case "Account Balance":
                 value = faker.number.int({ min: 1000, max: 500000 }).toString()
                 break
-              case "Bank Name":
-                value = faker.helpers.arrayElement(bankNames)
-                break
-              case "Account Type":
-                value = faker.helpers.arrayElement(accountTypes)
-                break
+              // case "Bank Name":
+              //   value = faker.helpers.arrayElement(bankNames)
+              //   break
+              // case "Account Type":
+              //   value = faker.helpers.arrayElement(accountTypes)
+              //   break
               default:
                 if (column.type === "TEXT") {
                   value = faker.person.fullName()

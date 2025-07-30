@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation"
 import Sidebar from "../_components/dashboardCom/Sidebar"
 import Navbar from "../_components/dashboardCom/Navbar"
 import BaseCard from "../_components/dashboardCom/BaseCard"
+import BaseCardSkeleton from "../_components/dashboardCom/BaseCardSkeleton"
 import TableCard from "../_components/dashboardCom/TableCard"
 import CreateBaseModal from "../_components/dashboardCom/CreateBaseModal"
 import CreateTableModal from "../_components/dashboardCom/CreateTableModal"
 import { api } from "~/trpc/react"
+import TableCardSkeleton from "../_components/dashboardCom/TableCardSkeleton.tsx"
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
@@ -19,6 +21,10 @@ export default function DashboardPage() {
   const [isCreateBaseOpen, setIsCreateBaseOpen] = useState(false)
   const [isCreateTableOpen, setIsCreateTableOpen] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [deletingBaseId, setDeletingBaseId] = useState<string | null>(null)
+  const [isCreatingBase, setIsCreatingBase] = useState(false)
+  const [isCreatingTable, setIsCreatingTable] = useState(false)
+  const [deletingTableId, setDeletingTableId] = useState<string | null>(null)
 
   // TRPC context for query invalidation
   const utils = api.useContext()
@@ -28,13 +34,39 @@ export default function DashboardPage() {
 
   // Mutation for deleting base
   const deleteBaseMutation = api.base.delete.useMutation({
+    onMutate: (variables) => {
+      setDeletingBaseId(variables.id)
+    },
     onSuccess: () => {
       utils.base.getAll.invalidate()
-      if (selectedBase) setSelectedBase(null)
+      if (selectedBase === deletingBaseId) {
+        setSelectedBase(null)
+      }
       setSelectedTable(null)
+      //  setDeletingBaseId(null)
     },
-    onError: (e) => {
-      alert(e)
+    onError: (error) => {
+      console.error("Delete error:", error)
+      alert(`Failed to delete base: ${error.message}`)
+      setDeletingBaseId(null)
+    },
+  })
+
+  // Mutation for deleting table
+  const deleteTableMutation = api.table.delete.useMutation({
+    onMutate: (variables) => {
+      setDeletingTableId(variables.id)
+    },
+    onSuccess: () => {
+      utils.table.getByBaseId.invalidate({ baseId: selectedBase! })
+      if (selectedTable === deletingTableId) {
+        setSelectedTable(null)
+      }
+    },
+    onError: (error) => {
+      console.error("Delete table error:", error)
+      alert(`Failed to delete table: ${error.message}`)
+      setDeletingTableId(null)
     },
   })
 
@@ -59,6 +91,26 @@ export default function DashboardPage() {
     setIsSidebarOpen(!isSidebarOpen)
   }
 
+  const handleDeleteBase = (baseId: string) => {
+    //if (confirm("Are you sure you want to delete this base? This action cannot be undone.")) {
+    deleteBaseMutation.mutate({ id: baseId })
+    //   }
+  }
+
+  const handleDeleteTable = (tableId: string) => {
+    deleteTableMutation.mutate({ id: tableId })
+  }
+
+  // Render skeleton cards for bases
+  const renderBaseSkeletons = () => {
+    return Array.from({ length: 3 }).map((_, index) => <BaseCardSkeleton key={`base-skeleton-${index}`} />)
+  }
+
+  // Render skeleton cards for tables
+  const renderTableSkeletons = () => {
+    return Array.from({ length: 3 }).map((_, index) => <TableCardSkeleton key={`table-skeleton-${index}`} />)
+  }
+
   return (
     <div className="flex h-screen bg-white">
       {/* Navbar - Always on top */}
@@ -78,10 +130,14 @@ export default function DashboardPage() {
       />
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col pt-12">
+      <div
+        className={`flex-1 flex flex-col pt-12 transition-all duration-150 ease-out ${
+          isSidebarOpen ? "ml-60" : "ml-10"
+        }`}
+      >
         {" "}
         {/* pt-12 for navbar height */}
-        <main className="flex-1 overflow-auto p-6 ml-10">
+        <main className="flex-1 overflow-auto p-6">
           {" "}
           {/* ml-10 for collapsed sidebar */}
           {/* Error Handling */}
@@ -98,26 +154,34 @@ export default function DashboardPage() {
                   Create Base
                 </button>
               </div>
+
               {basesLoading ? (
-                <div className="text-gray-600">Loading bases...</div>
-              ) : bases.length === 0 ? (
-                <div className="text-gray-500">No bases found.</div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">{renderBaseSkeletons()}</div>
               ) : (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {bases.map((base) => (
-                    <BaseCard
-                      key={base.id}
-                      base={{
-                        id: base.id,
-                        name: base.name,
-                        description: base.description || "No description",
-                      }}
-                      onClick={() => setSelectedBase(base.id)}
-                      onDelete={(id) => {
-                        deleteBaseMutation.mutate({ id })
-                      }}
-                    />
-                  ))}
+                  {/* Show skeleton for creating base */}
+                  {isCreatingBase && <BaseCardSkeleton />}
+
+                  {bases.length === 0 && !isCreatingBase ? (
+                    <div className="col-span-full text-center text-gray-500 py-12">
+                      <p className="text-lg mb-2">No bases found</p>
+                      <p className="text-sm">Create your first base to get started</p>
+                    </div>
+                  ) : (
+                    bases.map((base) => (
+                      <BaseCard
+                        key={base.id}
+                        base={{
+                          id: base.id,
+                          name: base.name,
+                          description: base.description || "No description",
+                        }}
+                        onClick={() => setSelectedBase(base.id)}
+                        onDelete={handleDeleteBase}
+                        isDeleting={deletingBaseId === base.id}
+                      />
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -147,22 +211,33 @@ export default function DashboardPage() {
                   Create Table
                 </button>
               </div>
+
               {tablesLoading ? (
-                <div className="text-gray-600">Loading tables...</div>
-              ) : tables.length === 0 ? (
-                <div className="text-gray-500">No tables found.</div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">{renderTableSkeletons()}</div>
               ) : (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {tables.map((table) => (
-                    <TableCard
-                      key={table.id}
-                      table={{
-                        id: table.id,
-                        name: table.name,
-                      }}
-                      onClick={() => setSelectedTable(table.id)}
-                    />
-                  ))}
+                  {/* Show skeleton for creating table */}
+                  {isCreatingTable && <TableCardSkeleton />}
+
+                  {tables.length === 0 && !isCreatingTable ? (
+                    <div className="col-span-full text-center text-gray-500 py-12">
+                      <p className="text-lg mb-2">No tables found</p>
+                      <p className="text-sm">Create your first table to get started</p>
+                    </div>
+                  ) : (
+                    tables.map((table) => (
+                      <TableCard
+                        key={table.id}
+                        table={{
+                          id: table.id,
+                          name: table.name,
+                        }}
+                        onClick={() => setSelectedTable(table.id)}
+                        onDelete={handleDeleteTable}
+                        isDeleting={deletingTableId === table.id}
+                      />
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -184,9 +259,15 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {isCreateBaseOpen && <CreateBaseModal onClose={() => setIsCreateBaseOpen(false)} />}
+      {isCreateBaseOpen && (
+        <CreateBaseModal onClose={() => setIsCreateBaseOpen(false)} onCreating={setIsCreatingBase} />
+      )}
       {isCreateTableOpen && selectedBase && (
-        <CreateTableModal onClose={() => setIsCreateTableOpen(false)} baseId={selectedBase} />
+        <CreateTableModal
+          onClose={() => setIsCreateTableOpen(false)}
+          baseId={selectedBase}
+          onCreating={setIsCreatingTable}
+        />
       )}
     </div>
   )
